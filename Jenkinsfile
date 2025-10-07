@@ -1,36 +1,67 @@
 pipeline {
     agent any
+
+    environment {
+        
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64' 
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+    }
     
     stages {
-        stage('Checkout & Build') {
+        stage('first project ') {
             steps {
-                echo 'Tentative de récupération de la branche principale (main)...'
-                // 🚨 CORRECTION : FORCER L'UTILISATION DE LA BRANCHE 'main' 🚨
-                // Si la branche est différente, remplacez 'main' par le nom correct.
-                git url: 'https://github.com/WorKenX306/DevOps.git', branch: 'main'
-
-                // Nettoyage et Compilation
-                sh "mvn clean compile"
+                echo 'first project devops'
             }
-
-            post {
-                success {
-                    junit '**/target/surefire-reports/TEST-*.xml'
-                    archiveArtifacts 'target/*.jar'
+        }
+        
+        stage('checkout ') {
+            steps {
+                
+                git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
+            }
+        }
+        
+        stage('mail') {
+            steps {
+                // REMPLACEZ VOTRE ADRESSE E-MAIL ICI
+                mail body: 'Ce mail est envoyé depuis Jenkins via Gmail App Password', subject: 'Test Email from Pipeline', to: 'tasnim.kheder@esprit.tn' 
+            }
+        }
+        
+        // 1. MVN CLEAN (Exécuté dans le bon sous-dossier)
+        stage('MVN CLEAN') {
+            steps {
+                dir('Order/Order') {   
+                    sh 'mvn clean'
                 }
             }
         }
         
-        // --- STAGE SONARQUBE ---
-        stage('SonarQube Analysis') {
+        // 2. MVN COMPILE (Exécuté dans le bon sous-dossier)
+        stage('MVN COMPILE') {
             steps {
-                echo 'Lancement de l\'analyse du code avec SonarQube...'
-                
-                // N'oubliez pas de remplacer l'IP, le TOKEN et la clé de projet
-                sh "mvn sonar:sonar \
-                   -Dsonar.host.url=http://<Adresse_IP_de_votre_VM>:9000 \
-                   -Dsonar.login=<VOTRE_TOKEN_SONARQUBE> \
-                   -Dsonar.projectKey=mon-projet-devops" 
+                dir('Order/Order') {   
+                    sh 'mvn compile'
+                }
+            }
+        }
+        
+        // 3. BUILD & SONAR ANALYSIS
+        stage('Build & Sonar Analysis') {
+            steps {
+                // Compilation et analyse du code en une seule commande, dans le bon dossier
+                dir('Order/Order') {   
+                    sh '''
+                        // Suppression du MAVEN_OPTS car Java 17 ne nécessite pas '--enable-preview'
+                        
+                        mvn clean package sonar:sonar \
+                            -Dsonar.projectKey=mon-projet-devops \
+                            -Dsonar.host.url=http://<ADRESSE_IP_DE_VOTRE_VM>:9000 \
+                            -Dsonar.token=<VOTRE_TOKEN_SONARQUBE> \
+                            -Dsonar.java.source=17 \
+                            -Dsonar.java.target=17
+                    '''
+                }
             }
         }
     }
