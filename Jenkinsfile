@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // CORRECTION : Nous changeons le JAVA_HOME pour pointer vers Java 22.
-        // C'est indispensable car le pom.xml du prof exige Java 22.
-        // !!! VÉRIFIEZ BIEN QUE CE CHEMIN CORRESPOND À VOTRE INSTALLATION JAVA 22 !!!
+        // CORRECTION CRUCIALE : On passe à Java 22 pour correspondre au pom.xml du professeur.
+        // !!! VÉRIFIEZ CE CHEMIN : Il doit pointer vers le dossier racine du JDK 22 !!!
         JAVA_HOME = '/usr/lib/jvm/java-22-openjdk-amd64' 
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
@@ -16,6 +15,15 @@ pipeline {
             }
         }
         
+        // NOUVELLE ÉTAPE DE VÉRIFICATION
+        stage('Vérification Java') {
+            steps {
+                echo 'Vérification de la version Java utilisée par Maven...'
+                sh 'echo "JAVA_HOME défini à : ${JAVA_HOME}"'
+                sh 'java -version' // Ceci doit afficher "openjdk version "22...
+            }
+        }
+        
         stage('checkout ') {
             steps {
                 // Récupération du code depuis GitHub
@@ -23,7 +31,7 @@ pipeline {
             }
         }
         
-        // Les stages 'mail' sont laissés en commentaire, comme vous l'aviez fait.
+        // Le stage mail est laissé commenté.
         /*
         stage('mail') {
             steps {
@@ -38,13 +46,12 @@ pipeline {
         stage('MVN CLEAN') {
             steps {
                 dir('Order/Order') {    
-                    sh 'mvn clean'
+                    sh 'mvn clean' 
                 }
             }
         }
         
         // 2. MVN COMPILE
-        // Ce stage va maintenant utiliser Java 22 et devrait réussir
         stage('MVN COMPILE') {
             steps {
                 dir('Order/Order') {    
@@ -58,12 +65,11 @@ pipeline {
             steps {
                 dir('Order/Order') {    
                     sh '''
-                        // Nettoyage inutile ici car fait dans 'MVN CLEAN'
                         mvn package sonar:sonar \\
                             -Dsonar.projectKey=mon-projet-devops \\
                             -Dsonar.host.url=http://localhost:9000 \\
                             -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589 \\
-                            // CORRECTION : Ces paramètres doivent être 22 pour correspondre au pom.xml et au JAVA_HOME
+                            // CORRECTION : Les paramètres Sonar sont mis à jour
                             -Dsonar.java.source=22 \\
                             -Dsonar.java.target=22
                     '''
