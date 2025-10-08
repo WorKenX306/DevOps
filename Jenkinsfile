@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        
+        // Chemin vers Java 17, essentiel pour la compilation
         JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64' 
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
@@ -10,37 +10,45 @@ pipeline {
     stages {
         stage('first project ') {
             steps {
-                echo 'first project devops'
+                echo 'Début du pipeline DevOps'
             }
         }
         
         stage('checkout ') {
             steps {
-                
+                // Récupération du code depuis GitHub
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
             }
         }
         
+        // =========================================================
+        // STAGE MAIL : MIS EN COMMENTAIRE POUR IGNORER LES ERREURS SMTP
+        // Si vous avez réussi à configurer Outlook, enlevez les //
+        // =========================================================
+        /*
         stage('mail') {
             steps {
-                // REMPLACEZ VOTRE ADRESSE E-MAIL ICI
-                mail body: 'Ce mail est envoyé depuis Jenkins via Gmail App Password', subject: 'Test Email from Pipeline', to: 'tasnim.kheder@esprit.tn' 
+                mail body: 'Le build est terminé. Vérifiez l\'état dans Jenkins.', 
+                     subject: 'Notification de Pipeline Jenkins', 
+                     to: 'tasnim.kheder@esprit.tn' 
             }
         }
+        */
         
-        // 1. MVN CLEAN (Exécuté dans le bon sous-dossier)
+        // 1. MVN CLEAN
+        // Nous nous déplaçons dans le dossier 'Order/Order' où se trouve le pom.xml
         stage('MVN CLEAN') {
             steps {
-                dir('Order/Order') {   
+                dir('Order/Order') {    
                     sh 'mvn clean'
                 }
             }
         }
         
-        // 2. MVN COMPILE (Exécuté dans le bon sous-dossier)
+        // 2. MVN COMPILE
         stage('MVN COMPILE') {
             steps {
-                dir('Order/Order') {   
+                dir('Order/Order') {    
                     sh 'mvn compile'
                 }
             }
@@ -49,16 +57,17 @@ pipeline {
         // 3. BUILD & SONAR ANALYSIS
         stage('Build & Sonar Analysis') {
             steps {
-                // Compilation et analyse du code en une seule commande, dans le bon dossier
-                dir('Order/Order') {   
+                // Cette étape combine le package Maven et l'analyse SonarQube
+                dir('Order/Order') {    
                     sh '''
-                        // Suppression du MAVEN_OPTS car Java 17 ne nécessite pas '--enable-preview'
+                        // Le MAVEN_OPTS a été retiré, c'est propre pour Java 17
                         
-                        mvn clean package sonar:sonar \
-                            -Dsonar.projectKey=mon-projet-devops \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589 \
-                            -Dsonar.java.source=17 \
+                        mvn clean package sonar:sonar \\
+                            -Dsonar.projectKey=mon-projet-devops \\
+                            -Dsonar.host.url=http://localhost:9000 \\
+                            // REMPLACEZ CE JETON PAR LE VÔTRE SI VOUS LE CHANGEZ
+                            -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589 \\
+                            -Dsonar.java.source=17 \\
                             -Dsonar.java.target=17
                     '''
                 }
