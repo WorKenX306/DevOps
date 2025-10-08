@@ -56,8 +56,8 @@ pipeline {
                         
                         mvn clean package sonar:sonar \
                             -Dsonar.projectKey=mon-projet-devops \
-                            -Dsonar.host.url=http://<ADRESSE_IP_DE_VOTRE_VM>:9000 \
-                            -Dsonar.token=<VOTRE_TOKEN_SONARQUBE> \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589 \
                             -Dsonar.java.source=17 \
                             -Dsonar.java.target=17
                     '''
