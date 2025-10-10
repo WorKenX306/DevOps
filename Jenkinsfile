@@ -3,7 +3,7 @@ pipeline {
         docker {
             image 'maven:3.9.6-eclipse-temurin-22-jammy'
             // ✅ Monte le cache Maven de Jenkins et définit le HOME
-            args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2'
+            args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
 
         }
     }
