@@ -55,7 +55,7 @@ pipeline {
             sh '''
                 mvn sonar:sonar \
                     -Dsonar.projectKey=mon-projet-devops \
-                    -Dsonar.host.url=http://host.docker.internal:9000 \
+                    -Dsonar.host.url=http://localhost:9000 \
                     -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589
             '''
         }
