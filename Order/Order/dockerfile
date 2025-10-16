@@ -1,31 +1,20 @@
-# =========================
 # Stage 1: Build the JAR
-# =========================
 FROM maven:3.9.9-eclipse-temurin-22 AS builder
-
-# Set working directory
 WORKDIR /app
 
-# Copy all project files
-COPY Order/Order /app
+# Copy all project files from the current context
+COPY . /app
 
 # Build the Spring Boot application
 RUN mvn clean package -DskipTests
 
-# =========================
 # Stage 2: Run the JAR
-# =========================
 FROM openjdk:22-jdk-slim
-
-# Set working directory for runtime
 WORKDIR /app
 
 # Copy the built JAR from the builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Expose the port used by the Spring Boot app
 EXPOSE 8080
-
-# Command to run the JAR
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
