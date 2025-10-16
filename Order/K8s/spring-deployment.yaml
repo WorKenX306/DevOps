@@ -13,27 +13,27 @@ metadata:
   namespace: devops
 type: Opaque
 data:
-  SPRING_DATASOURCE_USERNAME: c3ByaW5n  # "spring" en base64
-  SPRING_DATASOURCE_PASSWORD: c3ByaW5nMTIz  # "spring123" en base64
+  SPRING_DATASOURCE_USERNAME: c3ByaW5n        # "spring" en base64
+  SPRING_DATASOURCE_PASSWORD: c3ByaW5nMTIz    # "spring123" en base64
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spring-app
+  name: order-app
   namespace: devops
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: spring-app
+      app: order-app
   template:
     metadata:
       labels:
-        app: spring-app
+        app: order-app
     spec:
       containers:
-      - name: spring-app
-	image: hassen434/spring-app:latest
+      - name: order-app
+        image: hassen434/order-app:latest
         ports:
         - containerPort: 8080
         envFrom:
@@ -45,13 +45,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: spring-service
+  name: order-service
   namespace: devops
 spec:
   selector:
-    app: spring-app
+    app: order-app
   ports:
     - port: 8080
       targetPort: 8080
       nodePort: 30080
   type: NodePort
+
