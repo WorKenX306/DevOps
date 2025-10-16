@@ -2,11 +2,17 @@
 FROM maven:3.9.9-eclipse-temurin-22 AS builder
 WORKDIR /app
 
-# Copy all project files from the current context
+# Copy only pom.xml first to leverage Docker cache
+COPY pom.xml .
+
+# Download dependencies (cached if pom.xml doesn't change)
+RUN mvn dependency:go-offline -B || mvn dependency:resolve -B
+
+# Copy the rest of the source code
 COPY . /app
 
-# Build the Spring Boot application
-RUN mvn clean package -DskipTests
+# Build the application
+RUN mvn clean package -DskipTests -o || mvn clean package -DskipTests
 
 # Stage 2: Run the JAR
 FROM openjdk:22-jdk-slim
