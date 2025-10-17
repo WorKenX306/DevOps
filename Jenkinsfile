@@ -6,6 +6,8 @@ pipeline{
     }
     environment {
         SONAR_TOKEN = credentials('jenkins-sonar-token')
+        EMAIL_RECIPIENTS = "workenxaimelespatat@gmail.com"
+
     }
 
     stages{
@@ -43,10 +45,10 @@ pipeline{
         }
         stage("Send Analysis Email"){
             steps{
-                emailext(
-                    to: 'workenxaimelespatat@gmail.com',
-                    subject: "Jenkins Pipeline Test",
-                    body: "This is a test email from your pipeline."
+                 emailext(
+                    subject: "Test Email from Jenkins",
+                    body: "<p>This is a test email from Jenkins pipeline.</p>",
+                    to: EMAIL_RECIPIENTS
                 )
             }
         }
