@@ -1,12 +1,11 @@
 pipeline{
     agent any
-    
     triggers {
         githubPush()
     }
     environment {
         SONAR_TOKEN = credentials('jenkins-sonar-token')
-        EMAIL_RECIPIENTS = "workenxaimelespatat@gmail.com"
+        EMAIL_RECIPIENTS = "mustapha.belkahdi@gmail.com"
 
     }
 
