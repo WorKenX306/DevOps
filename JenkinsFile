@@ -8,7 +8,7 @@ pipeline{
     stages{
         stage('Github'){
             steps{
-                echo"Cloning the repo from github"
+                echo "Cloning the repo from github"
                 git branch: 'Mustapha', url: 'https://github.com/WorKenX306/DevOps'
             }
         }
