@@ -32,14 +32,14 @@ pipeline {
         stage('Checkout du code') {
             steps {
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
-                echo '✅ Code récupéré depuis GitHub (branche tasnim)'
+                echo ' Code récupéré depuis GitHub (branche tasnim)'
             }
         }
 
         stage('Build Maven') {
             steps {
                 dir('Order/Order') {
-                    echo '🏗️ Construction du projet Maven...'
+                    echo 'Construction du projet Maven...'
                     sh 'mvn -Dmaven.repo.local=/root/.m2/repository clean package'
                 }
             }
@@ -51,7 +51,7 @@ pipeline {
     }
     steps {
         dir('Order/Order') {
-            echo '🔍 Lancement de l’analyse SonarQube...'
+            echo 'Lancement de l’analyse SonarQube...'
             sh '''
                 mvn sonar:sonar \
                     -Dsonar.projectKey=mon-projet-devops \
@@ -64,17 +64,17 @@ pipeline {
 
         stage('Fin') {
             steps {
-                echo '✅ Pipeline terminé avec succès !'
+                echo ' Pipeline terminé avec succès !'
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Build réussi et analyse SonarQube effectuée.'
+            echo ' Build réussi et analyse SonarQube effectuée.'
         }
         failure {
-            echo '❌ Échec du pipeline : vérifiez les logs Maven ou Docker.'
+            echo ' Échec du pipeline : vérifiez les logs Maven ou Docker.'
         }
     }
 }
