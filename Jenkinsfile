@@ -43,23 +43,23 @@ pipeline{
                 }
             }
         }
-        stage("Send Analysis Email"){
-            steps{
-                 emailext(
-                    subject: "Test Email from Jenkins",
-                    body: "<p>This is a test email from Jenkins pipeline.</p>",
-                    to: EMAIL_RECIPIENTS
-                )
-            }
-        }
     }
     post {
+        success {
+            emailext(
+                subject: "Jenkins Build SUCCESS for Devops",
+                body: "<p>The Jenkins pipeline for Devops succeeded!</p>",
+                to: EMAIL_RECIPIENTS,
+                mimeType: 'text/html'
+            )
+        }
+
         failure {
             emailext(
-                to: 'workenxaimelespatat@gmail.com',
                 subject: "Jenkins Build FAILED for Devops",
-                body: "The Jenkins pipeline for Devops has failed. Please check the console output for details.",
-                mimeType: 'text/plain'
+                body: "<p>The Jenkins pipeline for Devops failed. Please check the console output for details.</p>",
+                to: EMAIL_RECIPIENTS,
+                mimeType: 'text/html'
             )
         }
     }
