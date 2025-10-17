@@ -44,7 +44,7 @@ pipeline{
         stage("Send Analysis Email"){
             steps{
                 emailext(
-                    to: 'mustapha.belkahdi@gmail.com',
+                    to: 'workenxaimelespatat@gmail.com',
                     subject: "Jenkins Pipeline Test",
                     body: "This is a test email from your pipeline."
                 )
@@ -54,7 +54,7 @@ pipeline{
     post {
         failure {
             emailext(
-                to: 'mustapha.belkahdi@gmail.com',
+                to: 'workenxaimelespatat@gmail.com',
                 subject: "Jenkins Build FAILED for Devops",
                 body: "The Jenkins pipeline for Devops has failed. Please check the console output for details.",
                 mimeType: 'text/plain'
