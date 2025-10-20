@@ -11,7 +11,6 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: /data/mysql
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -24,7 +23,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -57,7 +55,6 @@ spec:
       - name: mysql-storage
         persistentVolumeClaim:
           claimName: mysql-pvc
-
 ---
 apiVersion: v1
 kind: Service
