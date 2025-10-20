@@ -1,19 +1,17 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: devops
----
+cat <<EOF > mysql-deployment.yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: mysql-pv
+  namespace: devops
 spec:
   capacity:
     storage: 1Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/data/mysql"
+    path: /data/mysql
+
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -26,6 +24,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,7 +32,6 @@ metadata:
   name: mysql
   namespace: devops
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: mysql
@@ -47,9 +45,9 @@ spec:
         image: mysql:8.0
         env:
         - name: MYSQL_ROOT_PASSWORD
-          value: "root123"
+          value: root
         - name: MYSQL_DATABASE
-          value: "springdb"
+          value: testdb
         ports:
         - containerPort: 3306
         volumeMounts:
@@ -59,6 +57,7 @@ spec:
       - name: mysql-storage
         persistentVolumeClaim:
           claimName: mysql-pvc
+
 ---
 apiVersion: v1
 kind: Service
@@ -71,5 +70,6 @@ spec:
   ports:
     - port: 3306
       targetPort: 3306
-  type: ClusterIP
+  clusterIP: None
+EOF
 
