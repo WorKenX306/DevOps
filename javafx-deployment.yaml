@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javafx-deployment
+  labels:
+    app: javafx-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: javafx-app
+  template:
+    metadata:
+      labels:
+        app: javafx-app
+    spec:
+      containers:
+        - name: javafx-container
+          image: my-javafx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_HOST
+              value: "mysql-service"
+            - name: DATABASE_USER
+              value: "root"
+            - name: DATABASE_PASSWORD
+              value: "root"
