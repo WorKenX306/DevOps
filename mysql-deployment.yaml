@@ -9,7 +9,6 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: /mnt/data/mysql
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -21,13 +20,13 @@ spec:
   resources:
     requests:
       storage: 1Gi
-
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql
+  name: mysql-deployment
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: mysql
@@ -42,13 +41,26 @@ spec:
           ports:
             - containerPort: 3306
           env:
-          - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-          secretKeyRef:
-          name: mysql-secret
-          key: MYSQL_ROOT_PASSWORD
-          - name: MYSQL_DATABASE
-          valueFrom:
-          secretKeyRef:
-          name: mysql-secret
-          key: MYSQL_DATABASE
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+            - name: MYSQL_DATABASE
+              value: mydb
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-storage
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+  clusterIP: None
