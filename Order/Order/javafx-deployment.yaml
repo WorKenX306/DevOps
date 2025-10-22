@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javafx-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: javafx-app
+  template:
+    metadata:
+      labels:
+        app: javafx-app
+    spec:
+      containers:
+      - name: javafx-app
+        image: hassen434/javafx-order-app:latest
+        env:
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: "orderdb"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "root123"
+        ports:
+        - containerPort: 8080
