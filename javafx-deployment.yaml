@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: javafx-app
-        image: <your-dockerhub-username>/javafx-app:latest
+        image: hassen434/javafx-app:latest
         env:
         - name: DATABASE_URL
           valueFrom:
