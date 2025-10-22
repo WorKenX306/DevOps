@@ -1,0 +1,233 @@
+pipeline {
+    agent any
+    
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        DOCKER_REGISTRY = 'localhost:5000'
+        IMAGE_NAME = 'javafx-order-app'
+        K8S_NAMESPACE = 'devops'
+    }
+    
+    stages {
+        stage('Git Checkout') {
+            steps {
+                checkout scmGit(
+                    branches: [[name: 'Anas']], 
+                    extensions: [], 
+                    userRemoteConfigs: [[
+                        credentialsId: 'githubtoken', 
+                        url: 'https://github.com/WorKenX306/DevOps.git'
+                    ]]
+                )
+            }
+        }
+        
+        stage('Prepare POM') {
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        sed -i 's/<release>22<\\/release>/<release>17<\\/release>/g' pom.xml
+                        sed -i 's/<maven.compiler.source>22<\\/maven.compiler.source>/<maven.compiler.source>17<\\/maven.compiler.source>/g' pom.xml
+                        sed -i 's/<maven.compiler.target>22<\\/maven.compiler.target>/<maven.compiler.target>17<\\/maven.compiler.target>/g' pom.xml
+                    '''
+                }
+            }
+        }
+        
+        stage('Maven Clean') {
+            steps {
+                dir('Order/Order') {
+                    sh 'mvn clean'
+                }
+            }
+        }
+        
+        stage('Maven Compile') {
+            steps {
+                dir('Order/Order') {
+                    sh 'mvn compile'
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_HOST_URL = 'http://localhost:9000'
+                SONAR_AUTH_TOKEN = credentials('sonarqube')
+            }
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=sample_project \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
+                }
+            }
+        }
+        
+        stage('Maven Package') {
+            steps {
+                dir('Order/Order') {
+                    sh 'mvn package -DskipTests'
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🐳 Building Docker image...'
+                        sh """
+                            docker build -t ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} .
+                            docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Push to Registry') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '📤 Pushing image to local registry...'
+                        sh """
+                            docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
+                            docker push ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy MySQL to Kubernetes') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🗄️ Deploying MySQL to Kubernetes...'
+                        sh """
+                            # Create namespace if not exists
+                            kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                            
+                            # Apply MySQL resources
+                            kubectl apply -f mysql-pv.yaml
+                            kubectl apply -f mysql-pvc.yaml
+                            kubectl apply -f mysql-deployment.yaml
+                            kubectl apply -f mysql-service.yaml
+                            
+                            # Wait for MySQL to be ready
+                            echo 'Waiting for MySQL to be ready...'
+                            kubectl wait --for=condition=ready pod -l app=mysql -n ${K8S_NAMESPACE} --timeout=300s || true
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy Application to Kubernetes') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🚀 Deploying JavaFX application to Kubernetes...'
+                        sh """
+                            # Apply application resources
+                            kubectl apply -f app-configmap.yaml
+                            kubectl apply -f app-secret.yaml
+                            kubectl apply -f javafx-deployment.yaml
+                            kubectl apply -f javafx-service.yaml
+                            
+                            # Force rollout to pick up new image
+                            kubectl rollout restart deployment/javafx-order-app -n ${K8S_NAMESPACE}
+                            
+                            # Wait for rollout to complete
+                            echo 'Waiting for application deployment...'
+                            kubectl rollout status deployment/javafx-order-app -n ${K8S_NAMESPACE} --timeout=300s
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    echo '✅ Verifying Kubernetes deployment...'
+                    sh """
+                        echo '=== Pods Status ==='
+                        kubectl get pods -n ${K8S_NAMESPACE}
+                        
+                        echo ''
+                        echo '=== Services ==='
+                        kubectl get svc -n ${K8S_NAMESPACE}
+                        
+                        echo ''
+                        echo '=== Application Logs (last 20 lines) ==='
+                        kubectl logs -l app=javafx-order-app -n ${K8S_NAMESPACE} --tail=20 || true
+                        
+                        echo ''
+                        echo '=== Service Endpoint ==='
+                        NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+                        echo "Application URL: http://\${NODE_IP}:30080"
+                    """
+                }
+            }
+        }
+        
+        stage('Send Email') {
+            steps {
+                mail bcc: '',
+                     body: """Build successful for Order project - Build #${BUILD_NUMBER}
+                     
+Deployment Details:
+- Namespace: ${K8S_NAMESPACE}
+- Image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}
+- Service: javafx-service (NodePort 30080)
+- MySQL: mysql-service (ClusterIP 3306)
+
+Access the application at: http://<NODE_IP>:30080
+                     """,
+                     cc: '',
+                     from: '',
+                     replyTo: '',
+                     subject: "Jenkins Build #${BUILD_NUMBER} - Kubernetes Deployment Success",
+                     to: 'anas.yahyaoui@esprit.tn'
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo '✅ Pipeline completed successfully!'
+            sh """
+                NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+                echo ""
+                echo "╔════════════════════════════════════════════════╗"
+                echo "║   DEPLOYMENT SUCCESSFUL - BUILD #${BUILD_NUMBER}          ║"
+                echo "╚════════════════════════════════════════════════╝"
+                echo ""
+                echo "🌐 Application: http://\${NODE_IP}:30080"
+                echo "📦 Image: ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+                echo "🔧 Namespace: ${K8S_NAMESPACE}"
+                echo ""
+            """
+        }
+        failure {
+            echo '❌ Pipeline failed!'
+            sh """
+                echo "Checking deployment status..."
+                kubectl get pods -n ${K8S_NAMESPACE} || true
+                echo ""
+                echo "Recent logs:"
+                kubectl logs -l app=javafx-order-app -n ${K8S_NAMESPACE} --tail=50 || true
+            """
+        }
+        always {
+            echo '🧹 Cleaning up Docker images...'
+            sh 'docker image prune -f || true'
+        }
+    }
+}
