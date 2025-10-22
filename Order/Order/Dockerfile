@@ -1,25 +1,26 @@
-# Stage 1: Build the JAR
-FROM maven:3.9.9-eclipse-temurin-22 AS builder
+FROM eclipse-temurin:17-jre
+
 WORKDIR /app
 
-# Copy only pom.xml first to leverage Docker cache
-COPY pom.xml .
+# Copy the JAR file built by Maven
+COPY target/Order-1.0-SNAPSHOT.jar app.jar
 
-# Download dependencies (cached if pom.xml doesn't change)
-RUN mvn dependency:go-offline -B || mvn dependency:resolve -B
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y libgtk-3-0 libgl1 libxext6 netcat-openbsd && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy the rest of the source code
-COPY . /app
-
-# Build the application
-RUN mvn clean package -DskipTests -o || mvn clean package -DskipTests
-
-# Stage 2: Run the JAR
-FROM openjdk:22-jdk-slim
-WORKDIR /app
-
-# Copy the built JAR from the builder stage
-COPY --from=builder /app/target/*.jar app.jar
+# Environment variables (will be overridden by Kubernetes)
+ENV DB_HOST=mysql-service \
+    DB_PORT=3306 \
+    DB_NAME=orderdb \
+    DB_USER=orderuser \
+    DB_PASSWORD=orderpass
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# CRITICAL FIX: Use -cp instead of -jar to specify main class
+# This fixes the "ClassNotFoundException: tn.esprit.MainApp" error
+CMD ["java", \
+     "-cp", "app.jar", \
+     "tn.esprit.MainApp"]
