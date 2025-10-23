@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: javafx-deployment
+  namespace: devops
 spec:
   replicas: 1
   selector:
@@ -16,17 +17,4 @@ spec:
         - name: javafx
           image: nginx:latest
           ports:
-            - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: javafx-service
-spec:
-  selector:
-    app: javafx
-  ports:
-    - port: 8080
-      targetPort: 8080
-  type: NodePort
-
+            - containerPort: 8080
