@@ -1,0 +1,74 @@
+---
+# ConfigMap for Database Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: devops
+data:
+  DB_URL: "jdbc:mysql://mysql-service:3306/orderdb"
+---
+# Secret for Database Credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+  namespace: devops
+type: Opaque
+data:
+  DB_USER: dXNlcg==  # base64 encoded "user"
+  DB_PASSWORD: cGFzc3dvcmQ=  # base64 encoded "password"
+---
+# JavaFX Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: javafx-app
+  namespace: devops
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: javafx-app
+  template:
+    metadata:
+      labels:
+        app: javafx-app
+    spec:
+      containers:
+      - name: javafx-app
+        image: ramiklouz/javafx-order-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_URL
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: DB_PASSWORD
+---
+# Service to expose JavaFX App
+apiVersion: v1
+kind: Service
+metadata:
+  name: javafx-service
+  namespace: devops
+spec:
+  type: NodePort
+  selector:
+    app: javafx-app
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080
