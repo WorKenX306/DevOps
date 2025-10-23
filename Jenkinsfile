@@ -1,5 +1,4 @@
 pipeline {
-
     agent {
         docker {
             image 'maven:3.9.6-eclipse-temurin-22-jammy'
@@ -62,8 +61,31 @@ pipeline {
                 }
             }
         }
+    }
 
+    post {
+        success {
+            echo 'Build réussi et analyse SonarQube effectuée.'
+        }
+        failure {
+            echo 'Échec du pipeline : vérifiez les logs Maven ou Docker.'
+        }
+    }
+}
+
+//////////////////////
+// Stage séparé pour Kubernetes
+//////////////////////
+pipeline {
+    agent none
+
+    stages {
         stage('Déploiement Kubernetes') {
+            agent {
+                docker {
+                    image 'bitnami/kubectl:latest'
+                }
+            }
             steps {
                 withEnv(["KUBECONFIG=/var/lib/jenkins/.kube/config"]) {
                     echo '🚀 Déploiement des manifests Kubernetes'
@@ -75,22 +97,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Fin') {
-            steps {
-                echo 'Pipeline terminé avec succès !'
-            }
-        }
-
-    } // fin des stages
-
-    post {
-        success {
-            echo 'Build réussi et analyse SonarQube effectuée.'
-        }
-        failure {
-            echo 'Échec du pipeline : vérifiez les logs Maven ou Docker.'
-        }
     }
-
 }
