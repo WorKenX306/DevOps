@@ -78,3 +78,18 @@ pipeline {
         }
     }
 }
+
+stage('Déploiement Kubernetes') {
+    steps {
+        withEnv(["KUBECONFIG=/var/lib/jenkins/.kube/config"]) {
+            echo '🚀 Déploiement des manifests Kubernetes'
+            sh 'kubectl apply -f mysql-deployment.yaml -n devops'
+            sh 'kubectl apply -f mysql-service.yaml -n devops'
+            sh 'kubectl apply -f javafx-deployment.yaml -n devops'
+            sh 'kubectl apply -f javafx-service.yaml -n devops'
+
+            // Vérification rapide des Pods
+            sh 'kubectl get pods -n devops'
+        }
+    }
+}
