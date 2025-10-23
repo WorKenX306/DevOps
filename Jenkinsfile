@@ -106,7 +106,7 @@
 
                     -Dsonar.host.url=http://sonarqube:9000 \
 
-                    -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589
+                    -Dsonar.token=squ_b8f6d7256c186234fa5024231bfcc731339844e8
 
             '''
 
