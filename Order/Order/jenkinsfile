@@ -1,0 +1,220 @@
+pipeline {
+    agent any
+    
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-17-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        IMAGE_NAME = 'javafx-order-app'
+        K8S_NAMESPACE = 'devops'
+        DOCKER_IMAGE = 'ramiklouz/javafx-order-app'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        DOCKER_CREDENTIALS = 'dockerhub-credentials'
+    }
+    
+    stages {
+        stage('Git Checkout') {
+            steps {
+                checkout scmGit(
+                    branches: [[name: 'Rami']], 
+                    extensions: [], 
+                    userRemoteConfigs: [[
+                        credentialsId: 'githubtoken', 
+                        url: 'https://github.com/WorKenX306/DevOps.git'
+                    ]]
+                )
+            }
+        }
+        
+        stage('Prepare POM') {
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        sed -i 's/<release>22<\\/release>/<release>17<\\/release>/g' pom.xml
+                        sed -i 's/<maven.compiler.source>22<\\/maven.compiler.source>/<maven.compiler.source>17<\\/maven.compiler.source>/g' pom.xml
+                        sed -i 's/<maven.compiler.target>22<\\/maven.compiler.target>/<maven.compiler.target>17<\\/maven.compiler.target>/g' pom.xml
+                    '''
+                }
+            }
+        }
+        
+        stage('Maven Clean') {
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        java -version
+                        javac -version
+                        mvn clean
+                    '''
+                }
+            }
+        }
+        
+        stage('Maven Compile') {
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        java -version
+                        javac -version
+                        mvn compile
+                    '''
+                }
+            }
+        }
+        
+        stage('Maven Package') {
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        java -version
+                        javac -version
+                        mvn package -DskipTests
+                        echo "=== Listing target directory contents ==="
+                        ls -l target/
+                        if [ ! -f target/*.jar ]; then
+                            echo "ERROR: No JAR file found in target/"
+                            exit 1
+                        fi
+                    '''
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_HOST_URL = 'http://localhost:9000'
+                SONAR_AUTH_TOKEN = credentials('sonarqube')
+            }
+            steps {
+                dir('Order/Order') {
+                    sh '''
+                        java -version
+                        javac -version
+                        mvn sonar:sonar \
+                            -Dsonar.projectKey=javafx_order_project \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.login=$SONAR_AUTH_TOKEN
+                    '''
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                dir('Order/Order') {
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy MySQL to Kubernetes') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🗄️ Deploying MySQL to Kubernetes...'
+                        sh """
+                            # Create namespace if not exists
+                            kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                            
+                            # Apply MySQL resources
+                            kubectl apply -f mysql-deployment.yaml
+                            
+                            # Wait for MySQL to be ready
+                            echo 'Waiting for MySQL to be ready...'
+                            kubectl wait --for=condition=ready pod -l app=mysql -n ${K8S_NAMESPACE} --timeout=300s || true
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy Application to Kubernetes') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🚀 Deploying JavaFX application to Kubernetes...'
+                        sh """
+                            # Apply application resources
+                            kubectl apply -f javafx-deployment.yaml
+
+                            # Force rollout to pick up new image
+                            kubectl rollout restart deployment/javafx-app -n ${K8S_NAMESPACE}
+                            
+                            # Wait for rollout to complete
+                            echo 'Waiting for application deployment...'
+                            kubectl rollout status deployment/javafx-app -n ${K8S_NAMESPACE} --timeout=300s
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Verify Deployment') {
+            steps {
+                script {
+                    echo '✅ Verifying Kubernetes deployment...'
+                    sh """
+                        echo '=== Pods Status ==='
+                        kubectl get pods -n ${K8S_NAMESPACE}
+                        
+                        echo ''
+                        echo '=== Services ==='
+                        kubectl get svc -n ${K8S_NAMESPACE}
+                        
+                        echo ''
+                        echo '=== Application Logs (last 20 lines) ==='
+                        kubectl logs -l app=javafx-app -n ${K8S_NAMESPACE} --tail=20 || true
+                        
+                        echo ''
+                        echo '=== Service Endpoint ==='
+                        NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+                        echo "Application URL: http://\${NODE_IP}:30080"
+                    """
+                }
+            }
+        }
+        
+        stage('Mail Notification') {
+            steps {
+                script {
+                    def nodeIp = sh(script: 'kubectl get nodes -o jsonpath="{.items[0].status.addresses[?(@.type==\\"InternalIP\\")].address}"', returnStdout: true).trim()
+                    mail bcc: '', 
+                         body: """
+                         Build #${BUILD_NUMBER} completed successfully!
+                         
+                         Project: JavaFX Order Application
+                         Status: SUCCESS
+                         
+                         Access the app at: http://${nodeIp}:30080
+                         
+                         Check Jenkins for details.
+                         """, 
+                         cc: '', 
+                         from: 'ramiklouz@gmail.com', 
+                         replyTo: '', 
+                         subject: "✅ Build #${BUILD_NUMBER} - SUCCESS", 
+                         to: 'ramiklouz@gmail.com'
+                }
+            }
+        }        
+    }
+    
+    post {
+        success {
+            echo '✅ Pipeline completed successfully!'
+            echo '🚀 Application deployed to Kubernetes!'
+        }
+        failure {
+            echo '❌ Pipeline failed!'
+            mail bcc: '', 
+                 body: "Build #${BUILD_NUMBER} failed. Check Jenkins logs.", 
+                 cc: '', 
+                 from: 'ramiklouz@gmail.com', 
+                 replyTo: '', 
+                 subject: "❌ Build #${BUILD_NUMBER} - FAILED", 
+                 to: 'ramiklouz@gmail.com'
+        }
+    }
+}
