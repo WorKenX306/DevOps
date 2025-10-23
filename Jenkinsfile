@@ -63,19 +63,22 @@ pipeline {
 }
 
 
-       stage('Déploiement Kubernetes') {
-    echo "🚀 Déploiement des manifests Kubernetes"
-    sh '''
-        echo "Installation de kubectl..."
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        chmod +x kubectl
-        mv kubectl /usr/local/bin/
-        echo "kubectl installé, version : $(kubectl version --client --short)"
-        
-        echo "Déploiement des manifests..."
-        kubectl apply -f mysql-deployment.yaml -n devops
-    '''
+      stage('Déploiement Kubernetes') {
+    steps {
+        echo "🚀 Déploiement des manifests Kubernetes"
+        sh '''
+            echo "Installation de kubectl..."
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            mv kubectl /usr/local/bin/
+            echo "kubectl installé, version : $(kubectl version --client --short)"
+            
+            echo "Déploiement des manifests..."
+            kubectl apply -f mysql-deployment.yaml -n devops
+        '''
+    }
 }
+
 
         stage('Fin') {
             steps {
