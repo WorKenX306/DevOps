@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy the JAR file from Maven build output (ensure it exists in Order/Order/target)
-COPY Order/Order/target/*.jar app.jar
+COPY target/*.jar app.jar
 
 # Expose port for REST API
 EXPOSE 8080
