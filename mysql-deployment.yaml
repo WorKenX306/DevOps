@@ -1,3 +1,4 @@
+# Persistent Volume MySQL
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -9,7 +10,9 @@ spec:
     - ReadWriteOnce
   hostPath:
     path: /mnt/data/mysql
+
 ---
+# Persistent Volume Claim MySQL
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -21,7 +24,9 @@ spec:
   resources:
     requests:
       storage: 1Gi
+
 ---
+# Déploiement MySQL
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -54,16 +59,3 @@ spec:
         - name: mysql-storage
           persistentVolumeClaim:
             claimName: mysql-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql-service
-  namespace: devops
-spec:
-  selector:
-    app: mysql
-  ports:
-    - port: 3306
-      targetPort: 3306
-  clusterIP: None
