@@ -1,11 +1,10 @@
 FROM eclipse-temurin:17-jdk
-
 WORKDIR /app
 
 # Copy the JAR file built by Maven
 COPY target/Order-1.0-SNAPSHOT.jar app.jar
 
-# Install X11 dependencies and Xvfb for headless JavaFX
+# Install X11 dependencies, Xvfb, and JavaFX for headless JavaFX
 RUN apt-get update && \
     apt-get install -y \
     libgtk-3-0 \
@@ -15,7 +14,8 @@ RUN apt-get update && \
     libxtst6 \
     libxi6 \
     xvfb \
-    netcat-openbsd && \
+    netcat-openbsd \
+    openjfx && \
     rm -rf /var/lib/apt/lists/*
 
 # Environment variables (will be overridden by Kubernetes)
