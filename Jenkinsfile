@@ -1,10 +1,9 @@
 pipeline {
-    // Agent par défaut (utilisé pour les étapes sans agent spécifique, comme le Checkout)
+    // Agent par défaut: Utilisé uniquement pour les étapes de contrôle de base (Début, Checkout)
     agent any 
 
     environment {
-        // Les variables JAVA_HOME, PATH et MAVEN_OPTS ont été supprimées d'ici
-        // car elles sont gérées par l'image Docker Maven.
+        // Les variables JAVA_HOME et PATH sont gérées par l'image Docker Maven.
         
         // REMPLACEZ 'MySonarQubeServer' par le nom exact de votre configuration SonarQube dans Jenkins
         SONAR_SERVER_ID = 'MySonarQubeServer' 
@@ -52,7 +51,6 @@ pipeline {
             steps {
                 dir('Order/Order') {
                     echo 'Construction du projet Maven...'
-                    // La commande mvn fonctionne sans conflit de JAVA_HOME
                     sh 'mvn -Dmaven.repo.local=/root/.m2/repository clean package' 
                 }
             }
@@ -70,7 +68,7 @@ pipeline {
                 }
             }
             steps {
-                // Utilise le wrapper withSonarQubeEnv pour la connexion sécurisée
+                // Cette fonction nécessite l'installation du plugin "SonarQube Scanner for Jenkins"
                 script {
                     withSonarQubeEnv(SONAR_SERVER_ID) {
                         dir('Order/Order') {
