@@ -1,13 +1,12 @@
 pipeline {
-    // Agent par défaut: Utilisé uniquement pour les étapes de contrôle de base (Début, Checkout)
+    // Agent par défaut (utilisé pour les étapes sans agent spécifique, comme le Checkout)
     agent any 
 
     environment {
-        JAVA_HOME = '/opt/java/openjdk'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
-        MAVEN_OPTS = "-Dmaven.repo.local=/root/.m2/repository"
-
-        // *** À MODIFIER : L'ID du serveur SonarQube configuré dans Jenkins ***
+        // Les variables JAVA_HOME, PATH et MAVEN_OPTS ont été supprimées d'ici
+        // car elles sont gérées par l'image Docker Maven.
+        
+        // REMPLACEZ 'MySonarQubeServer' par le nom exact de votre configuration SonarQube dans Jenkins
         SONAR_SERVER_ID = 'MySonarQubeServer' 
     }
 
@@ -24,17 +23,18 @@ pipeline {
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-22-jammy'
-                    // Assurez-vous que cette ligne est correcte pour votre réseau Docker
                     args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
                 }
             }
             steps {
+                echo 'Vérification de l’environnement dans le conteneur Maven...'
                 sh 'java -version'
                 sh 'mvn -version'
             }
         }
 
         stage('Checkout du code') {
+            // Pas besoin d'agent Docker, l'agent 'any' est suffisant
             steps {
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
                 echo ' Code récupéré depuis GitHub (branche tasnim)'
@@ -42,11 +42,18 @@ pipeline {
         }
 
         stage('Build Maven') {
-            // L'agent Maven est réutilisé automatiquement pour cette étape
+            // Réutilise l'agent Maven pour s'assurer d'avoir le bon environnement
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-22-jammy'
+                    args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+                }
+            }
             steps {
                 dir('Order/Order') {
                     echo 'Construction du projet Maven...'
-                    sh 'mvn -Dmaven.repo.local=/root/.m2/repository clean package'
+                    // La commande mvn fonctionne sans conflit de JAVA_HOME
+                    sh 'mvn -Dmaven.repo.local=/root/.m2/repository clean package' 
                 }
             }
         }
@@ -55,13 +62,19 @@ pipeline {
             when {
                 expression { currentBuild.currentResult == 'SUCCESS' }
             }
+            // Réutilise l'agent Maven
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-22-jammy'
+                    args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+                }
+            }
             steps {
-                // Le wrapper withSonarQubeEnv injecte l'URL et le Token de manière sécurisée.
+                // Utilise le wrapper withSonarQubeEnv pour la connexion sécurisée
                 script {
                     withSonarQubeEnv(SONAR_SERVER_ID) {
                         dir('Order/Order') {
                             echo "Lancement de l’analyse SonarQube via le serveur: ${SONAR_SERVER_ID}..."
-                            // L'URL et le Token sont injectés par Jenkins, on ne les passe plus en ligne de commande.
                             sh 'mvn sonar:sonar -Dsonar.projectKey=mon-projet-devops'
                         }
                     }
@@ -70,25 +83,26 @@ pipeline {
         }
         
         stage('Déploiement Kubernetes') {
-            // *** NOUVEL AGENT : Conteneur spécialisé qui contient la commande kubectl ***
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            // Agent spécialisé pour kubectl (résout l'erreur 'kubectl: not found')
             agent {
                 docker {
                     image 'bitnami/kubectl' 
-                    // Important: assurez-vous que ce conteneur peut accéder au cluster K8s
                     args '--network devops-net' 
                 }
             }
             steps {
-                // Assurez-vous que le fichier config Kube existe à cet emplacement sur l'hôte Jenkins
+                // Assurez-vous que le fichier config Kube existe sur l'hôte Jenkins
                 withEnv(["KUBECONFIG=/var/lib/jenkins/.kube/config"]) {
                     echo '🚀 Déploiement des manifests Kubernetes'
-                    // Les commandes kubectl s'exécutent maintenant correctement
                     sh 'kubectl apply -f mysql-deployment.yaml -n devops'
                     sh 'kubectl apply -f mysql-service.yaml -n devops'
                     sh 'kubectl apply -f javafx-deployment.yaml -n devops'
                     sh 'kubectl apply -f javafx-service.yaml -n devops'
 
-                    // Vérification rapide des Pods
+                    echo 'Vérification des Pods...'
                     sh 'kubectl get pods -n devops'
                 }
             }
