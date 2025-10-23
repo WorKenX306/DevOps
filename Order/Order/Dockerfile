@@ -1,7 +1,7 @@
-# Use OpenJDK 17
+# Use OpenJDK 17 as the base image
 FROM openjdk:17-jdk-slim
 
-# Install JavaFX dependencies (for headless mode if needed)
+# Install JavaFX dependencies for headless mode
 RUN apt-get update && apt-get install -y \
     libgtk-3-0 \
     libxtst6 \
@@ -12,18 +12,10 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy the JAR file (adjust path to match your build)
-ENV DB_HOST=mysql-service \
-    DB_PORT=3306 \
-    DB_NAME=orderdb \
-    DB_USER=orderuser \
-    DB_PASSWORD=orderpass
-
-
-
+# Copy the JAR file from Maven build output (ensure it exists in Order/Order/target)
 COPY Order/Order/target/*.jar app.jar
 
-# Expose port (if your app has REST API)
+# Expose port for REST API
 EXPOSE 8080
 
 # Run the application
