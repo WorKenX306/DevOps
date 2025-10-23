@@ -1,85 +1,177 @@
-pipeline {
+ pipeline {
+
     agent {
+
         docker {
-            image 'maven:3.9.6-eclipse-temurin-22-jammy' // Maven + Java 22
-            args '-u 0:0 -v /var/lib/jenkins/.m2:/root/.m2 -v /var/lib/jenkins/workspace:/workspace --network devops-net'
+
+            image 'maven:3.9.6-eclipse-temurin-22-jammy'
+
+            
+
+            args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+
+
         }
+
     }
+
 
     environment {
-        JAVA_HOME = '/usr/local/openjdk-22'
+
+        JAVA_HOME = '/opt/java/openjdk'
+
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
-        KUBECONFIG = '/workspace/.kube/config'
+
+        MAVEN_OPTS = "-Dmaven.repo.local=/root/.m2/repository"
+
     }
+
 
     stages {
+
+
         stage('Début') {
+
             steps {
-                echo '🚀 Pipeline DevOps lancé'
+
+                echo '🚀 Lancement du pipeline DevOps avec Java 22 et Maven Docker'
+
             }
+
         }
 
-        stage('Vérification Java & Maven') {
+
+        stage('Vérification Java') {
+
             steps {
+
                 sh 'java -version'
+
                 sh 'mvn -version'
+
             }
+
         }
+
 
         stage('Checkout du code') {
+
             steps {
+
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
+
+                echo ' Code récupéré depuis GitHub (branche tasnim)'
+
             }
+
         }
+
 
         stage('Build Maven') {
+
             steps {
+
                 dir('Order/Order') {
-                    sh 'mvn clean package -Dmaven.repo.local=/root/.m2/repository'
+
+                    echo 'Construction du projet Maven...'
+
+                    sh 'mvn -Dmaven.repo.local=/root/.m2/repository clean package'
+
                 }
+
             }
+
         }
 
-        stage('Analyse SonarQube') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                dir('Order/Order') {
-                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                        sh """
-                            mvn sonar:sonar \
-                                -Dsonar.projectKey=mon-projet-devops \
-                                -Dsonar.host.url=http://sonarqube:9000 \
-                                -Dsonar.login=${SONAR_TOKEN}
-                        """
-                    }
-                }
-            }
-        }
 
-        stage('Déploiement Kubernetes') {
-            steps {
-                sh '''
-                    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-                    chmod +x kubectl
-                    mv kubectl /usr/local/bin/
-                    kubectl apply -f mysql-deployment.yaml -n devops
-                    kubectl apply -f mysql-service.yaml -n devops
-                    kubectl apply -f javafx-deployment.yaml -n devops
-                    kubectl apply -f javafx-service.yaml -n devops
-                    kubectl get pods -n devops
-                '''
-            }
-        }
+   stage('Analyse SonarQube') {
+
+    when {
+
+        expression { currentBuild.currentResult == 'SUCCESS' }
+
     }
+
+    steps {
+
+        dir('Order/Order') {
+
+            echo 'Lancement de l’analyse SonarQube...'
+
+            sh '''
+
+                mvn sonar:sonar \
+
+                    -Dsonar.projectKey=mon-projet-devops \
+
+                    -Dsonar.host.url=http://sonarqube:9000 \
+
+                    -Dsonar.token=squ_2cefdc0a738acde8cb4abfed0e3d1f6c3cea2589
+
+            '''
+
+        }
+
+    }
+
+}
+
+
+        stage('Fin') {
+
+            steps {
+
+                echo ' Pipeline terminé avec succès !'
+
+            }
+
+        }
+
+    }
+
 
     post {
+
         success {
-            echo '🎉 Pipeline terminé avec succès !'
+
+            echo ' Build réussi et analyse SonarQube effectuée.'
+
         }
+
         failure {
-            echo '❌ Échec du pipeline : vérifiez Maven ou Docker.'
+
+            echo ' Échec du pipeline : vérifiez les logs Maven ou Docker.'
+
         }
+
     }
+
 }
+
+
+stage('Déploiement Kubernetes') {
+
+    steps {
+
+        withEnv(["KUBECONFIG=/var/lib/jenkins/.kube/config"]) {
+
+            echo '🚀 Déploiement des manifests Kubernetes'
+
+            sh 'kubectl apply -f mysql-deployment.yaml -n devops'
+
+            sh 'kubectl apply -f mysql-service.yaml -n devops'
+
+            sh 'kubectl apply -f javafx-deployment.yaml -n devops'
+
+            sh 'kubectl apply -f javafx-service.yaml -n devops'
+
+
+            // Vérification rapide des Pods
+
+            sh 'kubectl get pods -n devops'
+
+        }
+
+    }
+
+} 
