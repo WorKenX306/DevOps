@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-22-jammy'
-            args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
-        }
-    }
+    agent none  // pas d’agent global
 
     environment {
         JAVA_HOME = '/opt/java/openjdk'
@@ -15,12 +10,24 @@ pipeline {
     stages {
 
         stage('Début') {
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-22-jammy'
+                    args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+                }
+            }
             steps {
                 echo '🚀 Lancement du pipeline DevOps avec Java 22 et Maven Docker'
             }
         }
 
         stage('Vérification Java') {
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-22-jammy'
+                    args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+                }
+            }
             steps {
                 sh 'java -version'
                 sh 'mvn -version'
@@ -28,6 +35,7 @@ pipeline {
         }
 
         stage('Checkout du code') {
+            agent any
             steps {
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
                 echo 'Code récupéré depuis GitHub (branche tasnim)'
@@ -35,6 +43,12 @@ pipeline {
         }
 
         stage('Build Maven') {
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-22-jammy'
+                    args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+                }
+            }
             steps {
                 dir('Order/Order') {
                     echo 'Construction du projet Maven...'
@@ -46,6 +60,12 @@ pipeline {
         stage('Analyse SonarQube') {
             when {
                 expression { currentBuild.currentResult == 'SUCCESS' }
+            }
+            agent {
+                docker {
+                    image 'maven:3.9.6-eclipse-temurin-22-jammy'
+                    args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
+                }
             }
             steps {
                 dir('Order/Order') {
@@ -61,25 +81,7 @@ pipeline {
                 }
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Build réussi et analyse SonarQube effectuée.'
-        }
-        failure {
-            echo 'Échec du pipeline : vérifiez les logs Maven ou Docker.'
-        }
-    }
-}
-
-//////////////////////
-// Stage séparé pour Kubernetes
-//////////////////////
-pipeline {
-    agent none
-
-    stages {
         stage('Déploiement Kubernetes') {
             agent {
                 docker {
@@ -96,6 +98,15 @@ pipeline {
                     sh 'kubectl get pods -n devops'
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build réussi, analyse SonarQube effectuée et Kubernetes déployé.'
+        }
+        failure {
+            echo 'Échec du pipeline : vérifiez les logs Maven ou Docker.'
         }
     }
 }
