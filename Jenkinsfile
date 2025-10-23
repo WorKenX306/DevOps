@@ -1,5 +1,5 @@
 pipeline {
-    agent none  // pas d’agent global
+    agent none
 
     environment {
         JAVA_HOME = '/opt/java/openjdk'
@@ -8,7 +8,6 @@ pipeline {
     }
 
     stages {
-
         stage('Début') {
             agent {
                 docker {
@@ -21,7 +20,7 @@ pipeline {
             }
         }
 
-        stage('Vérification Java') {
+        stage('Vérification Java & Maven') {
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-22-jammy'
@@ -38,7 +37,7 @@ pipeline {
             agent any
             steps {
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
-                echo 'Code récupéré depuis GitHub (branche tasnim)'
+                echo '✅ Code récupéré depuis GitHub (branche tasnim)'
             }
         }
 
@@ -51,25 +50,25 @@ pipeline {
             }
             steps {
                 dir('Order/Order') {
-                    echo 'Construction du projet Maven...'
-                    sh 'mvn -Dmaven.repo.local=/root/.m2/repository clean package'
+                    echo '⚙️ Construction du projet Maven...'
+                    sh 'mvn clean package -Dmaven.repo.local=/root/.m2/repository'
                 }
             }
         }
 
         stage('Analyse SonarQube') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
             agent {
                 docker {
                     image 'maven:3.9.6-eclipse-temurin-22-jammy'
                     args '-u 0:0 -v /var/lib/jenkins/m2-docker:/root/.m2 --network devops-net'
                 }
             }
+            when {
+                expression { currentBuild.currentResult == 'SUCCESS' }
+            }
             steps {
                 dir('Order/Order') {
-                    echo 'Lancement de l’analyse SonarQube...'
+                    echo '🔍 Lancement de l’analyse SonarQube...'
                     withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                         sh """
                             mvn sonar:sonar \
@@ -86,6 +85,7 @@ pipeline {
             agent {
                 docker {
                     image 'bitnami/kubectl:latest'
+                    args '--network devops-net'
                 }
             }
             steps {
@@ -103,10 +103,10 @@ pipeline {
 
     post {
         success {
-            echo 'Build réussi, analyse SonarQube effectuée et Kubernetes déployé.'
+            echo '🎉 Pipeline terminé avec succès !'
         }
         failure {
-            echo 'Échec du pipeline : vérifiez les logs Maven ou Docker.'
+            echo '❌ Échec du pipeline : vérifiez les logs Maven ou Docker.'
         }
     }
 }
