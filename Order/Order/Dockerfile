@@ -12,8 +12,9 @@ RUN apt-get update && apt-get install -y \
 # Set working directory
 WORKDIR /app
 
-# Copy the JAR file from Maven build output (ensure it exists in Order/Order/target)
-COPY target/Order-1.0-SNAPSHOT.jar app.jar
+# Copy the JAR file from Maven build output
+# Path is relative to repository root where docker build runs
+COPY Order/Order/target/Order-1.0-SNAPSHOT.jar app.jar
 
 # Expose port for REST API
 EXPOSE 8080
