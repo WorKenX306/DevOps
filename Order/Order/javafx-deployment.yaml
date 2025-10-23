@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: javafx-app
-        image: localhost:5000/registry:latest
+        image: localhost:5000/javafx-order-app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
