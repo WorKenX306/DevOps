@@ -45,22 +45,23 @@ pipeline {
             }
         }
 
-        stage('Analyse SonarQube') {
-            when {
-                expression { currentBuild.currentResult == 'SUCCESS' }
-            }
-            steps {
-                dir('Order/Order') {
-                    echo 'Lancement de l’analyse SonarQube...'
-                    sh """
-                        mvn sonar:sonar \
-                            -Dsonar.projectKey=mon-projet-devops \
-                            -Dsonar.host.url=${SONAR_URL} \
-                            -Dsonar.login=${SONAR_TOKEN}
-                    """
-                }
-            }
+       stage('Analyse SonarQube') {
+    when {
+        expression { currentBuild.currentResult == 'SUCCESS' }
+    }
+    steps {
+        dir('Order/Order') {
+            echo 'Lancement de l’analyse SonarQube...'
+            sh '''
+                mvn sonar:sonar \
+                    -Dsonar.projectKey=mon-projet-devops \
+                    -Dsonar.host.url=http://sonarqube:9000 \
+                    -Dsonar.login=squ_b8f6d7256c186234fa5024231bfcc731339844e8
+            '''
         }
+    }
+}
+
 
         stage('Déploiement Kubernetes') {
             steps {
