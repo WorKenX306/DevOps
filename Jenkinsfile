@@ -17,13 +17,13 @@ pipeline {
         K8S_NAMESPACE = 'devops'
     }
     stages {
-        stage('Début') {
+        stage('Debut') {
             steps {
-                echo '🚀 Pipeline DevOps lancé avec Maven et Java Docker'
+                echo '🚀 Pipeline DevOps lance avec Maven et Java Docker'
             }
         }
         
-        stage('Vérification Java & Maven') {
+        stage('Verification Java & Maven') {
             steps {
                 sh 'java -version'
                 sh 'mvn -version'
@@ -33,7 +33,7 @@ pipeline {
         stage('Checkout du code') {
             steps {
                 git branch: 'tasnim', url: 'https://github.com/WorKenX306/DevOps.git'
-                echo 'Code récupéré depuis GitHub (branche tasnim)'
+                echo 'Code recupere depuis GitHub (branche tasnim)'
             }
         }
         
@@ -52,7 +52,7 @@ pipeline {
             }
             steps {
                 dir('Order/Order') {
-                    echo 'Lancement de l'analyse SonarQube...'
+                    echo 'Lancement de analyse SonarQube...'
                     sh '''
                         mvn sonar:sonar \
                             -Dsonar.projectKey=mon-projet-devops \
@@ -162,17 +162,17 @@ pipeline {
         
         stage('Fin') {
             steps {
-                echo '✅ Pipeline terminé avec succès !'
+                echo '✅ Pipeline termine avec succes !'
             }
         }
     }
     
     post {
         success {
-            echo '🎉 Build réussi, analyse SonarQube effectuée et application déployée sur Kubernetes.'
+            echo '🎉 Build reussi, analyse SonarQube effectuee et application deployee sur Kubernetes.'
         }
         failure {
-            echo '❌ Échec du pipeline : vérifiez les logs Maven, Docker ou Kubernetes.'
+            echo '❌ Echec du pipeline : verifiez les logs Maven, Docker ou Kubernetes.'
         }
     }
 }
