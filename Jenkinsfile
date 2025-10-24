@@ -5,7 +5,7 @@ pipeline{
     }
     environment {
         SONAR_TOKEN = credentials('jenkins-sonar-token')
-        EMAIL_RECIPIENTS = "mustapha.belkah@gmail.com"
+        EMAIL_RECIPIENTS = "mustapha.123belkah@gmail.com"
         DOCKER_IMAGE = "workenx/order-app"
         DOCKER_TAG = "latest"
         K8S_NAMESPACE = "devops"
@@ -60,7 +60,7 @@ pipeline{
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                         docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
                         docker push ${DOCKER_IMAGE}:latest
-                    """
+s                    """
                 }
             }
         }
@@ -69,7 +69,7 @@ pipeline{
             steps {
                 dir('Order/Order') {
                     script {
-                        echo '🗄️ Deploying MySQL to Kubernetes...'
+                        echo 'Deploying MySQL to Kubernetes...'
                         sh """
                             kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
                             kubectl apply -f mysql-deployment.yaml
@@ -85,7 +85,7 @@ pipeline{
             steps {
                 dir('Order/Order') {
                     script {
-                        echo '🚀 Deploying JavaFX application to Kubernetes...'
+                        echo 'Deploying JavaFX application to Kubernetes...'
                         sh """
                             kubectl apply -f order-deployment.yaml
                             kubectl apply -f order-app-service.yaml
@@ -98,25 +98,6 @@ pipeline{
             }
         }
 
-        stage('Verify Deployment') {
-                steps {
-                    script {
-                        echo '✅ Verifying Kubernetes deployment...'
-                        sh """
-                            echo '=== Pods Status ==='
-                            kubectl get pods -n ${K8S_NAMESPACE}
-
-                            echo ''
-                            echo '=== Services ==='
-                            kubectl get svc -n ${K8S_NAMESPACE}
-
-                            echo ''
-                            echo '=== Application Logs (last 20 lines) ==='
-                            kubectl logs -l app=order-app -n ${K8S_NAMESPACE} --tail=20 || true
-                        """
-                }
-            }
-        }
     }
     post {
         success {
