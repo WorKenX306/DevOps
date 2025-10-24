@@ -8,8 +8,8 @@ import java.sql.Statement;
 public class DataBase {
     private static final String URL = "jdbc:mysql://localhost:3306/";
     private static final String DB_NAME = "orderdb";
-    private static final String USER = "root";       // ton utilisateur MySQL
-    private static final String PASSWORD = "";       // ton mot de passe MySQL
+    private static final String USER = "user";       // ton utilisateur MySQL
+    private static final String PASSWORD = "password";       // ton mot de passe MySQL
 
     /**
      * Retourne une connexion à la base de données.
