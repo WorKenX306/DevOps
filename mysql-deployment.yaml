@@ -1,36 +1,7 @@
-# Persistent Volume MySQL
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: mysql-pv
-spec:
-  capacity:
-    storage: 1Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /mnt/data/mysql
-
----
-# Persistent Volume Claim MySQL
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pvc
-  namespace: devops
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-
----
-# Déploiement MySQL
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql-deployment
+  name: mysql
   namespace: devops
 spec:
   replicas: 1
@@ -43,19 +14,31 @@ spec:
         app: mysql
     spec:
       containers:
-        - name: mysql
-          image: mysql:8.0
-          ports:
-            - containerPort: 3306
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: root
-            - name: MYSQL_DATABASE
-              value: mydb
-          volumeMounts:
-            - mountPath: /var/lib/mysql
-              name: mysql-storage
-      volumes:
-        - name: mysql-storage
-          persistentVolumeClaim:
-            claimName: mysql-pvc
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "rootpassword"
+        - name: MYSQL_DATABASE
+          value: "orderdb"
+        - name: MYSQL_USER
+          value: "orderuser"
+        - name: MYSQL_PASSWORD
+          value: "orderpass"
+        ports:
+        - containerPort: 3306
+          name: mysql
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - "-c"
+            - |
+              mysql -u$MYSQL_USER -p$MYSQL_PASSWORD -e 'SELECT 1'
+          initialDelaySeconds: 30
+          periodSeconds: 10
