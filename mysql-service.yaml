@@ -1,13 +1,12 @@
-# Service MySQL
 apiVersion: v1
 kind: Service
 metadata:
   name: mysql-service
   namespace: devops
 spec:
+  type: ClusterIP
   selector:
     app: mysql
   ports:
-    - port: 3306
-      targetPort: 3306
-  clusterIP: None
+  - port: 3306
+    targetPort: 3306
