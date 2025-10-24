@@ -45,6 +45,13 @@ pipeline{
             }
         }
 
+        stage('Maven Package') {
+            steps {
+                dir('Order/Order') {
+                    sh 'mvn clean package'
+                }
+            }
+        }
         stage('Build & Push Docker Image') {
             steps {
                 dir('Order/Order') {
