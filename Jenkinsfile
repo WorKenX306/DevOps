@@ -79,7 +79,6 @@ pipeline {
         
         stage('Push to Registry') {
             steps {
-                dir('Order/Order') {
                     script {
                         echo '📤 Pushing image to local registry...'
                         sh """
@@ -89,11 +88,10 @@ pipeline {
                     }
                 }
             }
-        }
+        
         
         stage('Deploy MySQL to Kubernetes') {
             steps {
-                dir('Order/Order') {
                     script {
                         echo '🗄️ Deploying MySQL to Kubernetes...'
                         sh """
@@ -109,13 +107,12 @@ pipeline {
                             kubectl wait --for=condition=ready pod -l app=mysql -n ${K8S_NAMESPACE} --timeout=300s || true
                         """
                     }
-                }
+                
             }
         }
         
         stage('Deploy Application to Kubernetes') {
             steps {
-                dir('Order/Order') {
                     script {
                         echo '🚀 Deploying JavaFX application to Kubernetes...'
                         sh """
@@ -131,7 +128,7 @@ pipeline {
                             kubectl rollout status deployment/javafx-order-app -n ${K8S_NAMESPACE} --timeout=300s
                         """
                     }
-                }
+                
             }
         }
         
