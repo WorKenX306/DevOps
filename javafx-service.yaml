@@ -1,13 +1,13 @@
-# Service JavaFX
 apiVersion: v1
 kind: Service
 metadata:
   name: javafx-service
   namespace: devops
 spec:
+  type: NodePort
   selector:
-    app: javafx
+    app: javafx-order-app
   ports:
-    - port: 8080
-      targetPort: 8080
-  type: ClusterIP
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30080
