@@ -56,6 +56,7 @@ pipeline{
             steps {
                 dir('Order/Order') {
                     sh """
+                        docker login -u workenx -p azizzizou123
                         docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                         docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
                         docker push ${DOCKER_IMAGE}:latest
