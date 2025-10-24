@@ -6,7 +6,9 @@ pipeline{
     environment {
         SONAR_TOKEN = credentials('jenkins-sonar-token')
         EMAIL_RECIPIENTS = "mustapha.belkahdi@gmail.com"
-
+        DOCKER_IMAGE = "workenx/order-app"
+        DOCKER_TAG = "latest"
+        K8S_NAMESPACE = "devops"
     }
 
     stages{
@@ -39,6 +41,71 @@ pipeline{
                         -Dsonar.host.url=http://localhost:9000 \
                         -Dsonar.login=$SONAR_TOKEN
                     """
+                }
+            }
+        }
+
+        stage('Build & Push Docker Image') {
+            steps {
+                dir('Order/Order') {
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                        docker push ${DOCKER_IMAGE}:latest
+                    """
+                }
+            }
+        }
+
+         stage('Deploy MySQL to Kubernetes') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🗄️ Deploying MySQL to Kubernetes...'
+                        sh """
+                            kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+                            kubectl apply -f mysql-deployment.yaml
+                            echo 'Waiting for MySQL to be ready...'
+                            kubectl wait --for=condition=ready pod -l app=mysql -n ${K8S_NAMESPACE} --timeout=300s || true
+                        """
+                    }
+                }
+            }
+        }
+
+         stage('Deploy JavaFX Application to Kubernetes') {
+            steps {
+                dir('Order/Order') {
+                    script {
+                        echo '🚀 Deploying JavaFX application to Kubernetes...'
+                        sh """
+                            kubectl apply -f order-deployment.yaml
+                            kubectl apply -f order-app-service.yaml
+                            kubectl rollout restart deployment/order-app-deployment -n ${K8S_NAMESPACE}
+                            echo 'Waiting for application deployment...'
+                            kubectl rollout status deployment/order-app-deployment -n ${K8S_NAMESPACE} --timeout=300s
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+                steps {
+                    script {
+                        echo '✅ Verifying Kubernetes deployment...'
+                        sh """
+                            echo '=== Pods Status ==='
+                            kubectl get pods -n ${K8S_NAMESPACE}
+
+                            echo ''
+                            echo '=== Services ==='
+                            kubectl get svc -n ${K8S_NAMESPACE}
+
+                            echo ''
+                            echo '=== Application Logs (last 20 lines) ==='
+                            kubectl logs -l app=order-app -n ${K8S_NAMESPACE} --tail=20 || true
+                        """
                 }
             }
         }
