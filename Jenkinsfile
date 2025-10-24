@@ -90,7 +90,6 @@ s                    """
                             kubectl apply -f order-deployment.yaml
                             kubectl apply -f order-app-service.yaml
                             kubectl rollout restart deployment/order-app-deployment -n ${K8S_NAMESPACE}
-                            echo 'Waiting for application deployment...'
                             kubectl rollout status deployment/order-app-deployment -n ${K8S_NAMESPACE} --timeout=300s
                         """
                     }
