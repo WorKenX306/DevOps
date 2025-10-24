@@ -5,7 +5,7 @@ pipeline{
     }
     environment {
         SONAR_TOKEN = credentials('jenkins-sonar-token')
-        EMAIL_RECIPIENTS = "mustapha.125belkah@gmail.com"
+        EMAIL_RECIPIENTS = "mustapha.1245455belkah@gmail.com"
         DOCKER_IMAGE = "workenx/order-app"
         DOCKER_TAG = "latest"
         K8S_NAMESPACE = "devops"
