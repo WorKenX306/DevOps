@@ -1,20 +1,54 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: javafx-deployment
+  name: javafx-order-app
   namespace: devops
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: javafx
+      app: javafx-order-app
   template:
     metadata:
       labels:
-        app: javafx
+        app: javafx-order-app
     spec:
       containers:
-        - name: javafx
-          image: nginx:latest
-          ports:
-            - containerPort: 8080
+      - name: javafx-app
+        image: localhost:5000/javafx-order-app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secret
+              key: DB_PASSWORD
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
