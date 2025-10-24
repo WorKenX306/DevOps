@@ -124,7 +124,7 @@ kubectl rollout restart deployment/javafx-deployment -n devops
                             
                             # Wait for rollout to complete
                             echo 'Waiting for application deployment...'
-                            kubectl rollout status deployment/javafx-order-app -n ${K8S_NAMESPACE} --timeout=300s
+kubectl rollout status deployment/javafx-deployment -n ${K8S_NAMESPACE} 
                         """
                     }
                 
@@ -145,8 +145,7 @@ kubectl rollout restart deployment/javafx-deployment -n devops
                         
                         echo ''
                         echo '=== Application Logs (last 20 lines) ==='
-                        kubectl logs -l app=javafx-order-app -n ${K8S_NAMESPACE} --tail=20 || true
-                        
+                        kubectl logs -l app=javafx-order-app -n ${K8S_NAMESPACE} --tail=20 || true                        
                         echo ''
                         echo '=== Service Endpoint ==='
                         NODE_IP=\$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
