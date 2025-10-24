@@ -65,7 +65,6 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                dir('Order/Order') {
                     script {
                         echo '🐳 Building Docker image...'
                         sh """
@@ -73,7 +72,7 @@ pipeline {
                             docker tag ${DOCKER_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER} ${DOCKER_REGISTRY}/${IMAGE_NAME}:latest
                         """
                     }
-                }
+                
             }
         }
         
