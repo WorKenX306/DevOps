@@ -120,7 +120,7 @@ pipeline {
                             kubectl apply -f javafx-service.yaml
                             
                             # Force rollout to pick up new image
-                            kubectl rollout restart deployment/javafx-order-app -n ${K8S_NAMESPACE}
+kubectl rollout restart deployment/javafx-deployment -n devops
                             
                             # Wait for rollout to complete
                             echo 'Waiting for application deployment...'
